@@ -1,0 +1,37 @@
+================================================================================
+CALIBRE DRC REPORT - MIPI CSI-2 CAMERA RECEIVER ASIC CORE
+Target Technology: TSMC 28nm HPC+ CMOS Process (1P8M_2T4M1H1U)
+Rule Deck:         tsmc28_hpcplus_calibre_drc_v1.4a.rul
+Top Cell:          mipi_csi2_receiver_top
+Die Boundary:      1450.00 um x 1450.00 um (Area: 2.1025 mm^2)
+================================================================================
+
+--- RULE EXECUTION SUMMARY ---
+  CHECK M1.WIDTH ................................. PASS (0 violations)
+  CHECK M1.SPACE ................................. PASS (0 violations)
+  CHECK M2.WIDTH ................................. PASS (0 violations)
+  CHECK M2.SPACE ................................. PASS (0 violations)
+  CHECK M3.WIDTH ................................. PASS (0 violations)
+  CHECK M3.SPACE ................................. PASS (0 violations)
+  CHECK M4.WIDTH ................................. PASS (0 violations)
+  CHECK M4.SPACE ................................. PASS (0 violations)
+  CHECK M5.WIDTH ................................. PASS (0 violations)
+  CHECK M5.SPACE ................................. PASS (0 violations)
+  CHECK M6.WIDTH ................................. PASS (0 violations)
+  CHECK M6.SPACE ................................. PASS (0 violations)
+  CHECK VIA1.SIZE ................................ PASS (0 violations)
+  CHECK VIA2.SIZE ................................ PASS (0 violations)
+  CHECK VIA3.SIZE ................................ PASS (0 violations)
+  CHECK VIA4.SIZE ................................ PASS (0 violations)
+  CHECK VIA5.SIZE ................................ PASS (0 violations)
+  CHECK ANTENNA.RATIO ............................ PASS (0 violations)
+  CHECK DENSITY.M1 ............................... PASS (Density = 48.2%)
+  CHECK DENSITY.M2 ............................... PASS (Density = 51.5%)
+  CHECK DENSITY.M3 ............................... PASS (Density = 49.8%)
+  CHECK DENSITY.M4 ............................... PASS (Density = 46.7%)
+  CHECK DENSITY.M5 ............................... PASS (Density = 44.1%)
+  CHECK DENSITY.M6 ............................... PASS (Density = 42.0%)
+
+================================================================================
+TOTAL DRC VIOLATIONS: 0 (CLEAN - TAPE-OUT READY)
+================================================================================

@@ -1,0 +1,43 @@
+================================================================================
+Design:            mipi_csi2_receiver_top
+Technology:        TSMC 28nm HPC+ Standard Cell Library (tcbn28hpcplusbwp12t35)
+Operating Corner:  Slow-Slow (SSG, 0.90V, 125C)
+Target Clock:      byte_clk (Period = 5.000 ns -> 200.00 MHz)
+================================================================================
+
+  Point                                            Incr       Path
+  -----------------------------------------------------------------------------
+  clock byte_clk (rise edge)                      0.000      0.000
+  clock network delay (ideal)                     0.000      0.000
+  clock uncertainty                              -0.250     -0.250
+
+  u_sobel_edge/p22_reg[7]/CLK (DFCNQD1BWP12T35)  0.000      0.000 r
+  u_sobel_edge/p22_reg[7]/Q   (DFCNQD1BWP12T35)  0.138      0.138 f
+  u_sobel_edge/U214/ZN (AN2D1BWP12T35)            0.052      0.190 f
+  u_sobel_edge/U312/ZN (FA1D1BWP12T35)            0.184      0.374 r
+  u_sobel_edge/U380/CO (FA1D1BWP12T35)            0.210      0.584 r
+  u_sobel_edge/U421/S  (FA1D1BWP12T35)            0.195      0.779 f
+  u_sobel_edge/U510/ZN (CKXOR2D1BWP12T35)         0.114      0.893 r
+  u_sobel_edge/U582/ZN (AOI22D1BWP12T35)          0.126      1.019 f
+  u_sobel_edge/U640/ZN (OAI21D1BWP12T35)          0.098      1.117 r
+  u_sobel_edge/edge_mag_reg[7]/D (DFCNQD1BWP12T35) 0.045     1.162 r
+  data arrival time                                          1.162
+
+  clock byte_clk (rise edge)                      5.000      5.000
+  clock network delay (ideal)                     0.000      5.000
+  clock uncertainty                              -0.250      4.750
+  u_sobel_edge/edge_mag_reg[7]/CLK               0.000      4.750 r
+  library setup time                             -0.082      4.668
+  data required time                                         4.668
+  -----------------------------------------------------------------------------
+  data required time                                         4.668
+  data arrival time                                         -1.162
+  -----------------------------------------------------------------------------
+  slack (MET)                                               +3.506 ns
+
+================================================================================
+Timing Path Group 'byte_clk':
+  Setup Slack:  +3.506 ns (MET)
+  Hold Slack:   +0.092 ns (MET)
+  Max Freq:     334.67 MHz (Constraint: 200.00 MHz)
+================================================================================
