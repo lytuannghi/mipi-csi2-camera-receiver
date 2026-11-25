@@ -1,26 +1,32 @@
 ================================================================================
-Design:            mipi_csi2_receiver_top
-Technology:        TSMC 28nm HPC+ Standard Cell Library
-Report:            Hierarchical Area Breakdown
+RTL STRUCTURAL & SYNTHESIS READINESS SUMMARY: mipi_csi2_receiver_top
+Target Library Constraints: SkyWater 130nm HD Standard Cells (SDC)
 ================================================================================
 
----------------------------------------------------------------------------------------------------------
-Hierarchical Block                  Total Area (um^2)  Cell Count  Gate Equiv (NAND2)  Area Percentage
----------------------------------------------------------------------------------------------------------
-mipi_csi2_receiver_top              38,465.0           78,500      78,500 GE           100.0%
- |-- u_lane0_rx (D-PHY Lane 0)       1,820.4            3,715       3,715 GE             4.7%
- |-- u_lane1_rx (D-PHY Lane 1)       1,795.1            3,663       3,663 GE             4.7%
- |-- u_lane2_rx (D-PHY Lane 2)       1,795.1            3,663       3,663 GE             4.7%
- |-- u_lane3_rx (D-PHY Lane 3)       1,795.1            3,663       3,663 GE             4.7%
- |-- u_packet_handler (CSI-2 LLP)    4,920.8           10,042      10,042 GE            12.8%
- |-- u_raw10_depacker (RAW10 Unpack) 2,150.3            4,388       4,388 GE             5.6%
- |-- u_sliding_window (3x3 Matrix)  12,850.5           26,225      26,225 GE            33.4%
- |-- u_gaussian_filter (2D Blur)     3,940.2            8,041       8,041 GE            10.2%
- |-- u_sobel_edge (2D Sobel Engine)  4,210.6            8,593       8,593 GE            10.9%
- |-- u_axis_video_out (AXI4-S Stream)3,177.0            6,507       6,507 GE             8.3%
----------------------------------------------------------------------------------------------------------
-Total Equivalent Gate Count: 78,500 GE
-Chip Macro Footprint:        1,450 um x 1,450 um = 2.1025 mm^2
-Standard Cell Utilization:   68.5%
-Target Core Density:         72.0%
 ================================================================================
+RTL SYNTHESIS READINESS & CONSTRAINT REPORT: mipi-csi2-camera-receiver
+Method : Static Verilog/SV Structural Parser + SDC Constraint Audit
+Note   : Foundry Gate-Level Netlist & STA require PDK Liberty (.lib) + Synopsys/OpenROAD
+================================================================================
+RTL Source Files Inspected : 8
+Code Lines (Non-Comment)   : 591
+Sequential Blocks          : 7
+Combinational Blocks       : 1
+Declared reg/logic Signals : 59
+
+MODULE BREAKDOWN:
+  rtl\axi\axis_video_out.v                      | modules=axis_video_out               | loc=  53 | seq= 1 | comb= 0
+  rtl\depacker\raw10_depacker.v                 | modules=raw10_depacker               | loc=  63 | seq= 1 | comb= 0
+  rtl\dphy\mipi_dphy_lane_rx.v                  | modules=mipi_dphy_lane_rx            | loc=  47 | seq= 1 | comb= 0
+  rtl\isp\isp_gaussian_filter.v                 | modules=isp_gaussian_filter          | loc=  28 | seq= 1 | comb= 0
+  rtl\isp\isp_sliding_window_3x3.v              | modules=isp_sliding_window_3x3       | loc=  51 | seq= 1 | comb= 0
+  rtl\isp\isp_sobel_edge.v                      | modules=isp_sobel_edge               | loc=  47 | seq= 1 | comb= 0
+  rtl\mipi_csi2_receiver_top.v                  | modules=mipi_csi2_receiver_top       | loc= 158 | seq= 0 | comb= 1
+  rtl\packet\csi2_packet_handler.v              | modules=csi2_packet_handler          | loc= 144 | seq= 1 | comb= 0
+
+SDC CLOCK CONSTRAINTS:
+  csi2_timing.sdc: port=clk | period=5.00 ns | target=200.00 MHz
+
+ARITHMETIC DIVISION/MODULO CHECK: CLEAN (0 combinational / or % operators)
+================================================================================
+

@@ -107,9 +107,9 @@ module tb_mipi_csi2_receiver;
     );
 
     reg sobel_in_val;
-    wire sobel_out_val;
-    wire [7:0] sobel_out_mag;
-    wire sobel_out_edge;
+    wire        sobel_out_val;
+    wire [7:0]  sobel_out_mag;
+    wire        sobel_out_edge;
 
     isp_sobel_edge u_tb_sobel (
         .clk           (byte_clk),
@@ -124,15 +124,42 @@ module tb_mipi_csi2_receiver;
         .is_edge       (sobel_out_edge)
     );
 
+    reg        win_in_val;
+    reg  [7:0] win_in_pix;
+    wire       win_out_val;
+    wire [7:0] w00, w01, w02, w10, w11, w12, w20, w21, w22;
+    isp_sliding_window_3x3 #(.LINE_WIDTH(4)) u_tb_window (
+        .clk(byte_clk), .rst_n(rst_n),
+        .pixel_valid(win_in_val), .pixel_in(win_in_pix),
+        .window_valid(win_out_val),
+        .p00(w00), .p01(w01), .p02(w02),
+        .p10(w10), .p11(w11), .p12(w12),
+        .p20(w20), .p21(w21), .p22(w22)
+    );
+
     reg saw_frame_start;
     reg saw_line_start;
+    reg saw_axis_tvalid;
+    reg saw_axis_tuser;
+    reg saw_axis_tlast;
+    reg [23:0] first_axis_tdata;
     always @(posedge byte_clk or negedge rst_n) begin
         if (!rst_n) begin
-            saw_frame_start <= 1'b0;
-            saw_line_start  <= 1'b0;
+            saw_frame_start  <= 1'b0;
+            saw_line_start   <= 1'b0;
+            saw_axis_tvalid  <= 1'b0;
+            saw_axis_tuser   <= 1'b0;
+            saw_axis_tlast   <= 1'b0;
+            first_axis_tdata <= 24'd0;
         end else begin
             if (status_frame_start) saw_frame_start <= 1'b1;
             if (u_dut.u_packet_handler.line_start) saw_line_start <= 1'b1;
+            if (m_axis_video_tvalid) begin
+                if (!saw_axis_tvalid) first_axis_tdata <= m_axis_video_tdata;
+                saw_axis_tvalid <= 1'b1;
+                if (m_axis_video_tuser) saw_axis_tuser <= 1'b1;
+                if (m_axis_video_tlast) saw_axis_tlast <= 1'b1;
+            end
         end
     end
 
@@ -175,6 +202,8 @@ module tb_mipi_csi2_receiver;
         depack_in_val = 0; depack_in_b = 8'd0;
         gauss_in_val  = 0;
         sobel_in_val  = 0;
+        win_in_val    = 0;
+        win_in_pix    = 8'd0;
 
         $display("=====================================================================");
         $display("   MIPI CSI-2 CAMERA RECEIVER ASIC TESTBENCH EXECUTION               ");
@@ -271,34 +300,78 @@ module tb_mipi_csi2_receiver;
         // -------------------------------------------------------------
         // Test 6: RAW10 Byte-to-Pixel Depacking Verification
         // -------------------------------------------------------------
-        // Send 5 bytes: B0=0x80, B1=0x40, B2=0x20, B3=0x10, B4=0x55 (b01010101)
-        @(posedge byte_clk);
-        depack_in_val = 1; depack_in_b = 8'h80; @(posedge byte_clk);
-        depack_in_val = 1; depack_in_b = 8'h40; @(posedge byte_clk);
-        depack_in_val = 1; depack_in_b = 8'h20; @(posedge byte_clk);
-        depack_in_val = 1; depack_in_b = 8'h10; @(posedge byte_clk);
-        depack_in_val = 1; depack_in_b = 8'h55; @(posedge byte_clk);
-        depack_in_val = 0;
-        repeat(5) @(posedge byte_clk);
-
-        if (depack_out_val == 1'b1 || u_tb_depack.pixel_8bit != 8'd0) begin
-            $display("[PASS] Test 6: RAW10 Depacker unpacked 5 bytes into 4 10-bit pixels.");
-            tests_passed = tests_passed + 1;
-        end else begin
-            $display("[FAIL] Test 6: RAW10 Depacker failed.");
-            tests_failed = tests_failed + 1;
+        begin : check_raw10
+            reg [9:0] p0_got, p1_got, p2_got, p3_got;
+            integer   px_idx, cyc;
+            px_idx = 0;
+            p0_got = 10'd0; p1_got = 10'd0; p2_got = 10'd0; p3_got = 10'd0;
+            // Drive synchronously on negedge so posedge sampling has zero race
+            @(negedge byte_clk); depack_in_val = 1; depack_in_b = 8'h80;
+            @(negedge byte_clk); depack_in_val = 1; depack_in_b = 8'h40;
+            @(negedge byte_clk); depack_in_val = 1; depack_in_b = 8'h20;
+            @(negedge byte_clk); depack_in_val = 1; depack_in_b = 8'h10;
+            @(negedge byte_clk); depack_in_val = 1; depack_in_b = 8'h55;
+            @(negedge byte_clk); depack_in_val = 0;
+            for (cyc = 0; cyc < 8; cyc = cyc + 1) begin
+                @(posedge byte_clk); #1;
+                if (depack_out_val) begin
+                    case (px_idx)
+                        0: p0_got = depack_p10;
+                        1: p1_got = depack_p10;
+                        2: p2_got = depack_p10;
+                        3: p3_got = depack_p10;
+                    endcase
+                    px_idx = px_idx + 1;
+                end
+            end
+            if (px_idx == 4 && p0_got == 10'h201 && p1_got == 10'h101 &&
+                p2_got == 10'h081 && p3_got == 10'h041) begin
+                $display("[PASS] Test 6: RAW10 Depacker exact 4 pixels (0x%03X, 0x%03X, 0x%03X, 0x%03X).",
+                         p0_got, p1_got, p2_got, p3_got);
+                tests_passed = tests_passed + 1;
+            end else begin
+                $display("[FAIL] Test 6: RAW10 Depacker mismatch (cnt=%0d, %03X %03X %03X %03X).",
+                         px_idx, p0_got, p1_got, p2_got, p3_got);
+                tests_failed = tests_failed + 1;
+            end
         end
 
         // -------------------------------------------------------------
         // Test 7: 3x3 Sliding Window Spatial Neighborhood Matrix Assembly
         // -------------------------------------------------------------
-        @(posedge byte_clk);
-        if (u_dut.u_window.col_cnt !== 10'bx) begin
-            $display("[PASS] Test 7: 3x3 Sliding window dual line buffer initialized.");
-            tests_passed = tests_passed + 1;
-        end else begin
-            $display("[FAIL] Test 7: Sliding window undefined.");
-            tests_failed = tests_failed + 1;
+        begin : check_window3x3
+            integer r_idx, c_idx;
+            reg [7:0] cap_w00, cap_w11, cap_w22;
+            reg       saw_win;
+            saw_win = 1'b0;
+            cap_w00 = 8'd0; cap_w11 = 8'd0; cap_w22 = 8'd0;
+            for (r_idx = 0; r_idx < 3; r_idx = r_idx + 1) begin
+                for (c_idx = 0; c_idx < 4; c_idx = c_idx + 1) begin
+                    @(posedge byte_clk);
+                    win_in_val = 1'b1;
+                    win_in_pix = (r_idx * 4 + c_idx + 1);
+                    #1;
+                    if (win_out_val && !saw_win) begin
+                        saw_win = 1'b1;
+                        cap_w00 = w00; cap_w11 = w11; cap_w22 = w22;
+                    end
+                end
+            end
+            @(posedge byte_clk);
+            win_in_val = 1'b0;
+            #1;
+            if (!saw_win && win_out_val) begin
+                saw_win = 1'b1;
+                cap_w00 = w00; cap_w11 = w11; cap_w22 = w22;
+            end
+            if (saw_win && cap_w11 == 8'd6 && cap_w22 == 8'd11) begin
+                $display("[PASS] Test 7: 3x3 Sliding Window verified (center=%0d, br=%0d).", cap_w11, cap_w22);
+                tests_passed = tests_passed + 1;
+            end else begin
+                $display("[FAIL] Test 7: Sliding window mismatch (saw=%0b, w00=%0d, w11=%0d, w22=%0d).",
+                         saw_win, cap_w00, cap_w11, cap_w22);
+                tests_failed = tests_failed + 1;
+            end
         end
 
         // -------------------------------------------------------------
@@ -339,14 +412,19 @@ module tb_mipi_csi2_receiver;
         // Test 10: Full-Flow AXI4-Stream Video Output Generation with TUSER/TLAST
         // -------------------------------------------------------------
         isp_mode = 2'd0; // Passthrough mode
-        @(posedge byte_clk);
+        send_short_packet(8'h03, 16'h0001); // Line End -> arms line_end_pulse for next pixel's TLAST
+        send_byte(8'h2B); send_byte(8'd5); send_byte(8'd0); send_byte(8'h00);
+        send_byte(8'hAA); send_byte(8'h55); send_byte(8'h33); send_byte(8'h11); send_byte(8'h00);
+        send_byte(8'hFF); send_byte(8'hFF);
         repeat(10) @(posedge byte_clk);
 
-        if (m_axis_video_tvalid == 1'b1 || u_dut.u_axis_out.col_counter > 10'd0) begin
-            $display("[PASS] Test 10: Full-Flow AXI4-Stream Video master streaming verified with protocol alignment.");
+        if (saw_axis_tvalid && saw_axis_tuser && first_axis_tdata == 24'h808080) begin
+            $display("[PASS] Test 10: AXI4-Stream Video verified (TVALID=1, TUSER=1, first TDATA=0x%06X).",
+                     first_axis_tdata);
             tests_passed = tests_passed + 1;
         end else begin
-            $display("[FAIL] Test 10: AXI4-Stream Video output inactive.");
+            $display("[FAIL] Test 10: AXI4-Stream Video failed (tv=%0b, tu=%0b, data=0x%06X).",
+                     saw_axis_tvalid, saw_axis_tuser, first_axis_tdata);
             tests_failed = tests_failed + 1;
         end
 

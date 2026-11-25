@@ -31,7 +31,8 @@ module isp_sliding_window_3x3 #(
     reg [9:0] col_cnt;
     reg [9:0] row_cnt;
 
-    reg [7:0] lb0_out, lb1_out;
+    reg [7:0] r0_val, r1_val;
+    integer   init_i;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -41,23 +42,26 @@ module isp_sliding_window_3x3 #(
             p00 <= 8'd0; p01 <= 8'd0; p02 <= 8'd0;
             p10 <= 8'd0; p11 <= 8'd0; p12 <= 8'd0;
             p20 <= 8'd0; p21 <= 8'd0; p22 <= 8'd0;
-            lb0_out      <= 8'd0;
-            lb1_out      <= 8'd0;
+            r0_val       = 8'd0;
+            r1_val       = 8'd0;
+            for (init_i = 0; init_i < LINE_WIDTH; init_i = init_i + 1) begin
+                line_buf0[init_i] <= 8'd0;
+                line_buf1[init_i] <= 8'd0;
+            end
         end else begin
             window_valid <= 1'b0;
 
             if (pixel_valid) begin
-                // Read from line buffers
-                lb0_out <= line_buf0[col_cnt];
-                lb1_out <= line_buf1[col_cnt];
+                r0_val = line_buf0[col_cnt];
+                r1_val = line_buf1[col_cnt];
 
-                // Write into line buffers
-                line_buf0[col_cnt] <= lb1_out;
+                // Shift lines vertically (row1 -> row0, new pixel -> row1)
+                line_buf0[col_cnt] <= r1_val;
                 line_buf1[col_cnt] <= pixel_in;
 
-                // Shift 3x3 window horizontally
-                p02 <= lb0_out;  p01 <= p02;  p00 <= p01;
-                p12 <= lb1_out;  p11 <= p12;  p10 <= p11;
+                // Shift 3x3 window horizontally with zero column skew
+                p02 <= r0_val;   p01 <= p02;  p00 <= p01;
+                p12 <= r1_val;   p11 <= p12;  p10 <= p11;
                 p22 <= pixel_in; p21 <= p22;  p20 <= p21;
 
                 if (col_cnt >= LINE_WIDTH - 1) begin

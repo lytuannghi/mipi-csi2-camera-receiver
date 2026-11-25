@@ -1,6 +1,6 @@
 # ==============================================================================
 # Synopsys Design Constraints (SDC) - MIPI CSI-2 Camera Receiver ASIC Core
-# Target Technology: TSMC 28nm HPC+ Logic Standard Cell Library
+# Target Technology: SkyWater 130nm HD Standard Cell Library (1.80V, 25C)
 # Operating Condition: Worst-Case Slow-Slow Corner (SSG, 0.9V, 125C)
 # Target Frequency: 200.0 MHz (Parallel Byte Clock)
 # ==============================================================================

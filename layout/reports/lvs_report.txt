@@ -1,28 +1,8 @@
 ================================================================================
-CALIBRE LVS REPORT - MIPI CSI-2 CAMERA RECEIVER ASIC CORE
-Target Technology: TSMC 28nm HPC+ CMOS Process
-Schematic Source:  syn/netlist/mipi_csi2_receiver_top_syn.v
-Layout GDSII:      layout/gds/mipi_csi2_receiver_top.gds
-Top Cell:          mipi_csi2_receiver_top
+PHYSICAL GEOMETRY & TOP-LEVEL PORT AUDIT: mipi_csi2_receiver_top
+Process Node: SkyWater 130nm (DB Unit: 1 nm)
+Layout File:  layout/gds/mipi_csi2_receiver_top.gds
 ================================================================================
 
---- EXTRACTION AND COMPARISON SUMMARY ---
-  Schematic Instances:       78,500
-  Layout Instances:          78,500
-  Unmatched Instances:            0
-
-  Schematic Nets:            82,140
-  Layout Nets:               82,140
-  Unmatched Nets:                 0
-
-  Schematic Ports:               48
-  Layout Ports:                  48
-  Unmatched Ports:                0
-
-  Power Nets Check:
-    VDD  ................... MATCHED (100.0%)
-    VSS  ................... MATCHED (100.0%)
-
-================================================================================
-LVS COMPARISON STATUS: 100% MATCHED - CLEAN (ZERO DISCREPANCIES)
-================================================================================
+GDSII Geometry Check (verify_gds_drc.py): 0 geometric DRC violations (verified polygons)
+Note: External Magic/Netgen required for transistor-level SPICE extraction & LVS.

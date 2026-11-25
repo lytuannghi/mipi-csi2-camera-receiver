@@ -1,37 +1,26 @@
-================================================================================
-CALIBRE DRC REPORT - MIPI CSI-2 CAMERA RECEIVER ASIC CORE
-Target Technology: TSMC 28nm HPC+ CMOS Process (1P8M_2T4M1H1U)
-Rule Deck:         tsmc28_hpcplus_calibre_drc_v1.4a.rul
-Top Cell:          mipi_csi2_receiver_top
-Die Boundary:      1450.00 um x 1450.00 um (Area: 2.1025 mm^2)
-================================================================================
-
---- RULE EXECUTION SUMMARY ---
-  CHECK M1.WIDTH ................................. PASS (0 violations)
-  CHECK M1.SPACE ................................. PASS (0 violations)
-  CHECK M2.WIDTH ................................. PASS (0 violations)
-  CHECK M2.SPACE ................................. PASS (0 violations)
-  CHECK M3.WIDTH ................................. PASS (0 violations)
-  CHECK M3.SPACE ................................. PASS (0 violations)
-  CHECK M4.WIDTH ................................. PASS (0 violations)
-  CHECK M4.SPACE ................................. PASS (0 violations)
-  CHECK M5.WIDTH ................................. PASS (0 violations)
-  CHECK M5.SPACE ................................. PASS (0 violations)
-  CHECK M6.WIDTH ................................. PASS (0 violations)
-  CHECK M6.SPACE ................................. PASS (0 violations)
-  CHECK VIA1.SIZE ................................ PASS (0 violations)
-  CHECK VIA2.SIZE ................................ PASS (0 violations)
-  CHECK VIA3.SIZE ................................ PASS (0 violations)
-  CHECK VIA4.SIZE ................................ PASS (0 violations)
-  CHECK VIA5.SIZE ................................ PASS (0 violations)
-  CHECK ANTENNA.RATIO ............................ PASS (0 violations)
-  CHECK DENSITY.M1 ............................... PASS (Density = 48.2%)
-  CHECK DENSITY.M2 ............................... PASS (Density = 51.5%)
-  CHECK DENSITY.M3 ............................... PASS (Density = 49.8%)
-  CHECK DENSITY.M4 ............................... PASS (Density = 46.7%)
-  CHECK DENSITY.M5 ............................... PASS (Density = 44.1%)
-  CHECK DENSITY.M6 ............................... PASS (Density = 42.0%)
-
-================================================================================
-TOTAL DRC VIOLATIONS: 0 (CLEAN - TAPE-OUT READY)
-================================================================================
+====================================================================================
+GEOMETRIC GDSII DESIGN RULE CHECK (DRC) VERIFICATION REPORT
+Technology      : SkyWater 130nm
+Top Cell        : mipi_csi2_receiver_top
+GDSII File      : ..\mipi-csi2-camera-receiver\layout\gds\mipi_csi2_receiver_top.gds
+GDSII Size      : 21,064 bytes | ENDLIB=True
+Die Bounding Box: (0.00, 0.00) um to (360.00, 360.00) um [360.00 um x 360.00 um]
+Checker Engine  : Python Geometric GDSII Sweep-Line DRC Verifier (Reference Deck)
+====================================================================================
+LAYER-BY-LAYER GEOMETRIC CHECKS:
+  L64  (NWELL   ): polys=    16, density=18.00%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L65  (DIFF    ): polys=    16, density= 5.04%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L66  (POLY    ): polys=    16, density= 0.18%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L67  (CONTACT ): polys=    16, density= 0.03%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L68  (METAL1  ): polys=   160, density= 9.63%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L70  (METAL2  ): polys=    48, density= 2.81%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L72  (METAL3  ): polys=     6, density= 3.81%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L74  (METAL4  ): polys=     2, density= 2.35%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L75  (VIA4    ): polys=     4, density= 0.03%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L76  (METAL5  ): polys=     2, density= 2.35%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L108 (PAD     ): polys=    40, density= 4.44%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L235 (DIEAREA ): polys=     1, density=100.00%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+------------------------------------------------------------------------------------
+TOTAL GEOMETRIC DRC VIOLATIONS: 0
+DRC STATUS: CLEAN (0 VIOLATIONS)
+====================================================================================

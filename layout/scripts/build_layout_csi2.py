@@ -1,179 +1,113 @@
 #!/usr/bin/env python3
 """
-Physical Design Automation Script for MIPI CSI-2 v2.0 Camera Receiver ASIC
-Synthesizes binary GDSII stream file according to GDSII Stream Format (Release 6.0).
-Generates DRC (Design Rule Checking) and LVS (Layout Versus Schematic) reports.
+SkyWater 130nm Multi-Layer Physical GDSII Layout Generator for mipi_csi2_receiver_top.
+Produces a DRC-clean macro floorplan, dual M4/M5 power ring, standard-cell rails,
+I/O pad ring, and verifies all geometric rules with verify_gds_drc.py.
 """
-
 import os
-import struct
 import sys
 
-def write_gdsii_record(f, record_type, data_type, data_bytes=b""):
-    length = 4 + len(data_bytes)
-    header = struct.pack(">HBB", length, record_type, data_type)
-    f.write(header + data_bytes)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, SCRIPT_DIR)
 
-def generate_gdsii(filename):
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    with open(filename, "wb") as f:
-        # HEADER (Version 600)
-        write_gdsii_record(f, 0x00, 0x02, struct.pack(">H", 600))
-        # BGNLIB (Last modification / access date)
-        date_bytes = struct.pack(">12h", 2026, 11, 22, 16, 0, 0, 2026, 11, 22, 16, 0, 0)
-        write_gdsii_record(f, 0x01, 0x02, date_bytes)
-        # LIBNAME
-        write_gdsii_record(f, 0x02, 0x06, b"MIPI_CSI2_LIB\x00")
-        # UNITS (User unit = 0.001 um, Database unit = 1e-9 m)
-        write_gdsii_record(f, 0x03, 0x05, struct.pack(">dd", 0.001, 1e-9))
+from verify_gds_drc import GDSWriter, verify_gds
 
-        # BGNSTR (Begin Structure)
-        write_gdsii_record(f, 0x05, 0x02, date_bytes)
-        # STRNAME
-        write_gdsii_record(f, 0x06, 0x06, b"mipi_csi2_receiver_top\x00")
 
-        # Die Boundary Polygon (1450 um x 1450 um -> 1,450,000 nm x 1,450,000 nm)
-        # Boundary layer 100, datatype 0
-        write_gdsii_record(f, 0x08, 0x00) # BOUNDARY
-        write_gdsii_record(f, 0x0D, 0x02, struct.pack(">H", 100)) # LAYER
-        write_gdsii_record(f, 0x0E, 0x02, struct.pack(">H", 0))   # DATATYPE
-        die_coords = [
-            (0, 0),
-            (1450000, 0),
-            (1450000, 1450000),
-            (0, 1450000),
-            (0, 0)
-        ]
-        xy_bytes = b"".join(struct.pack(">ii", x, y) for x, y in die_coords)
-        write_gdsii_record(f, 0x10, 0x03, xy_bytes)
-        write_gdsii_record(f, 0x11, 0x00) # ENDEL
+def build_layout():
+    layout_dir = os.path.dirname(SCRIPT_DIR)
+    gds_path = os.path.join(layout_dir, "gds", "mipi_csi2_receiver_top.gds")
+    report_path = os.path.join(layout_dir, "reports", "drc_report.txt")
+    os.makedirs(os.path.dirname(gds_path), exist_ok=True)
+    os.makedirs(os.path.dirname(report_path), exist_ok=True)
 
-        # Power Ring / Power Stripes (Layer 31 - Metal 6, datatype 0)
-        pwr_rings = [
-            # VDD Ring Outer
-            [(50000, 50000), (1400000, 50000), (1400000, 80000), (50000, 80000), (50000, 50000)],
-            # VSS Ring Outer
-            [(90000, 90000), (1360000, 90000), (1360000, 120000), (90000, 120000), (90000, 90000)],
-        ]
-        for ring in pwr_rings:
-            write_gdsii_record(f, 0x08, 0x00)
-            write_gdsii_record(f, 0x0D, 0x02, struct.pack(">H", 31))
-            write_gdsii_record(f, 0x0E, 0x02, struct.pack(">H", 0))
-            xy = b"".join(struct.pack(">ii", x, y) for x, y in ring)
-            write_gdsii_record(f, 0x10, 0x03, xy)
-            write_gdsii_record(f, 0x11, 0x00)
+    die_w = 360000
+    die_h = 360000
+    macro_cols = 4
+    macro_rows = 4
+    pad_count = 10
 
-        # Macro Sub-blocks Placement (Layer 20 - Metal 1 standard cell rows)
-        # Sub-blocks: D-PHY rx, Packet Handler, Line Buffers, ISP Filters, AXI Stream
-        macros = [
-            ("DPHY_LANES_0_3", 150000, 150000, 550000, 450000),
-            ("CSI2_PACKET_HDLR", 600000, 150000, 1000000, 450000),
-            ("RAW10_DEPACKER", 1050000, 150000, 1300000, 450000),
-            ("ISP_SLIDING_WINDOW_3X3", 150000, 500000, 750000, 950000),
-            ("ISP_GAUSSIAN_SOBEL", 800000, 500000, 1300000, 950000),
-            ("AXIS_VIDEO_OUT", 150000, 1000000, 750000, 1300000),
-            ("CLOCK_TREE_AND_STATUS", 800000, 1000000, 1300000, 1300000),
-        ]
+    L_DIE_AREA = 235
+    L_NWELL = 64
+    L_DIFF = 65
+    L_POLY = 66
+    L_CONTACT = 67
+    L_MET1 = 68
+    L_VIA1 = 69
+    L_MET2 = 70
+    L_VIA2 = 71
+    L_MET3 = 72
+    L_VIA3 = 73
+    L_MET4 = 74
+    L_VIA4 = 75
+    L_MET5 = 76
+    L_PAD = 108
 
-        for name, x1, y1, x2, y2 in macros:
-            write_gdsii_record(f, 0x08, 0x00)
-            write_gdsii_record(f, 0x0D, 0x02, struct.pack(">H", 20))
-            write_gdsii_record(f, 0x0E, 0x02, struct.pack(">H", 0))
-            coords = [(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)]
-            xy = b"".join(struct.pack(">ii", x, y) for x, y in coords)
-            write_gdsii_record(f, 0x10, 0x03, xy)
-            write_gdsii_record(f, 0x11, 0x00)
+    gds = GDSWriter(gds_path, "MIPI_CSI2_LIB")
+    gds.start_structure("mipi_csi2_receiver_top")
+    gds.add_box(L_DIE_AREA, 0, 0, 0, die_w, die_h)
 
-        # ENDSTR (End Structure)
-        write_gdsii_record(f, 0x07, 0x00)
-        # ENDLIB (End Library)
-        write_gdsii_record(f, 0x04, 0x00)
+    RING_M = 28000
+    RING_W = 5000
+    CORE_X1 = RING_M + RING_W + 10000
+    CORE_Y1 = RING_M + RING_W + 10000
+    CORE_X2 = die_w - RING_M - RING_W - 10000
+    CORE_Y2 = die_h - RING_M - RING_W - 10000
 
-    print(f"[INFO] Successfully generated GDSII stream binary: {filename}")
-    print(f"[INFO] File size: {os.path.getsize(filename)} bytes")
+    gds.add_box(L_MET5, 0, RING_M, RING_M, die_w - RING_M, RING_M + RING_W)
+    gds.add_box(L_MET5, 0, RING_M, die_h - RING_M - RING_W, die_w - RING_M, die_h - RING_M)
+    gds.add_box(L_MET4, 0, RING_M, RING_M, RING_M + RING_W, die_h - RING_M)
+    gds.add_box(L_MET4, 0, die_w - RING_M - RING_W, RING_M, die_w - RING_M, die_h - RING_M)
 
-def generate_verification_reports(report_dir):
-    os.makedirs(report_dir, exist_ok=True)
-    drc_file = os.path.join(report_dir, "drc_report.txt")
-    lvs_file = os.path.join(report_dir, "lvs_report.txt")
+    for vx in (RING_M + 1000, die_w - RING_M - RING_W + 1000):
+        for vy in (RING_M + 1000, die_h - RING_M - RING_W + 1000):
+            gds.add_box(L_VIA4, 0, vx, vy, vx + 3000, vy + 3000)
 
-    with open(drc_file, "w") as f:
-        f.write("""================================================================================
-CALIBRE DRC REPORT - MIPI CSI-2 CAMERA RECEIVER ASIC CORE
-Target Technology: TSMC 28nm HPC+ CMOS Process (1P8M_2T4M1H1U)
-Rule Deck:         tsmc28_hpcplus_calibre_drc_v1.4a.rul
-Top Cell:          mipi_csi2_receiver_top
-Die Boundary:      1450.00 um x 1450.00 um (Area: 2.1025 mm^2)
-================================================================================
+    PAD_W, PAD_H = 12000, 12000
+    span_x = (CORE_X2 - CORE_X1) // pad_count
+    span_y = (CORE_Y2 - CORE_Y1) // pad_count
+    for i in range(pad_count):
+        px = CORE_X1 + i * span_x + (span_x - PAD_W) // 2
+        gds.add_box(L_PAD, 0, px, 6000, px + PAD_W, 6000 + PAD_H)
+        gds.add_box(L_PAD, 0, px, die_h - 6000 - PAD_H, px + PAD_W, die_h - 6000)
+        py = CORE_Y1 + i * span_y + (span_y - PAD_H) // 2
+        gds.add_box(L_PAD, 0, 6000, py, 6000 + PAD_W, py + PAD_H)
+        gds.add_box(L_PAD, 0, die_w - 6000 - PAD_W, py, die_w - 6000, py + PAD_H)
 
---- RULE EXECUTION SUMMARY ---
-  CHECK M1.WIDTH ................................. PASS (0 violations)
-  CHECK M1.SPACE ................................. PASS (0 violations)
-  CHECK M2.WIDTH ................................. PASS (0 violations)
-  CHECK M2.SPACE ................................. PASS (0 violations)
-  CHECK M3.WIDTH ................................. PASS (0 violations)
-  CHECK M3.SPACE ................................. PASS (0 violations)
-  CHECK M4.WIDTH ................................. PASS (0 violations)
-  CHECK M4.SPACE ................................. PASS (0 violations)
-  CHECK M5.WIDTH ................................. PASS (0 violations)
-  CHECK M5.SPACE ................................. PASS (0 violations)
-  CHECK M6.WIDTH ................................. PASS (0 violations)
-  CHECK M6.SPACE ................................. PASS (0 violations)
-  CHECK VIA1.SIZE ................................ PASS (0 violations)
-  CHECK VIA2.SIZE ................................ PASS (0 violations)
-  CHECK VIA3.SIZE ................................ PASS (0 violations)
-  CHECK VIA4.SIZE ................................ PASS (0 violations)
-  CHECK VIA5.SIZE ................................ PASS (0 violations)
-  CHECK ANTENNA.RATIO ............................ PASS (0 violations)
-  CHECK DENSITY.M1 ............................... PASS (Density = 48.2%)
-  CHECK DENSITY.M2 ............................... PASS (Density = 51.5%)
-  CHECK DENSITY.M3 ............................... PASS (Density = 49.8%)
-  CHECK DENSITY.M4 ............................... PASS (Density = 46.7%)
-  CHECK DENSITY.M5 ............................... PASS (Density = 44.1%)
-  CHECK DENSITY.M6 ............................... PASS (Density = 42.0%)
+    mw = (CORE_X2 - CORE_X1 - (macro_cols - 1) * 14000) // macro_cols
+    mh = (CORE_Y2 - CORE_Y1 - (macro_rows - 1) * 14000) // macro_rows
+    for r in range(macro_rows):
+        for c in range(macro_cols):
+            mx1 = CORE_X1 + c * (mw + 14000)
+            my1 = CORE_Y1 + r * (mh + 14000)
+            mx2 = mx1 + mw
+            my2 = my1 + mh
+            gds.add_box(L_NWELL, 0, mx1 + 2000, my1 + 2000, mx2 - 2000, my1 + mh // 2)
+            gds.add_box(L_DIFF, 0, mx1 + 3500, my1 + 3500, mx2 - 3500, my1 + 11500)
+            gds.add_box(L_POLY, 0, mx1 + 5000, my1 + 2800, mx1 + 6500, my1 + 12500)
+            gds.add_box(L_CONTACT, 0, mx1 + 8500, my1 + 5500, mx1 + 10000, my1 + 7000)
+            for ry in range(my1 + 15000, my2 - 6000, 4000):
+                gds.add_box(L_MET1, 0, mx1 + 3000, ry, mx2 - 3000, ry + 1500)
+            for bx in range(mx1 + 12000, mx2 - 12000, 12000):
+                gds.add_box(L_MET2, 0, bx, my1 + 14000, bx + 2000, my2 - 6000)
 
-================================================================================
-TOTAL DRC VIOLATIONS: 0 (CLEAN - TAPE-OUT READY)
-================================================================================
-""")
+    for c in range(1, macro_cols):
+        cx = CORE_X1 + c * (mw + 14000) - 9000
+        gds.add_box(L_MET3, 0, cx, CORE_Y1, cx + 3000, CORE_Y2)
+        gds.add_box(L_MET3, 0, cx + 6000, CORE_Y1, cx + 9000, CORE_Y2)
 
-    with open(lvs_file, "w") as f:
-        f.write("""================================================================================
-CALIBRE LVS REPORT - MIPI CSI-2 CAMERA RECEIVER ASIC CORE
-Target Technology: TSMC 28nm HPC+ CMOS Process
-Schematic Source:  syn/netlist/mipi_csi2_receiver_top_syn.v
-Layout GDSII:      layout/gds/mipi_csi2_receiver_top.gds
-Top Cell:          mipi_csi2_receiver_top
-================================================================================
+    gds.end_structure()
+    gds.close()
 
---- EXTRACTION AND COMPARISON SUMMARY ---
-  Schematic Instances:       78,500
-  Layout Instances:          78,500
-  Unmatched Instances:            0
+    total_v = verify_gds(
+        gds_path=gds_path,
+        report_path=report_path,
+        top_name="mipi_csi2_receiver_top",
+        tech_name="SkyWater 130nm",
+    )
+    print(f"[OK] Generated {gds_path} ({os.path.getsize(gds_path)} bytes), DRC violations={total_v}")
+    return 0 if total_v == 0 else 1
 
-  Schematic Nets:            82,140
-  Layout Nets:               82,140
-  Unmatched Nets:                 0
-
-  Schematic Ports:               48
-  Layout Ports:                  48
-  Unmatched Ports:                0
-
-  Power Nets Check:
-    VDD  ................... MATCHED (100.0%)
-    VSS  ................... MATCHED (100.0%)
-
-================================================================================
-LVS COMPARISON STATUS: 100% MATCHED - CLEAN (ZERO DISCREPANCIES)
-================================================================================
-""")
-
-    print(f"[INFO] DRC report written: {drc_file}")
-    print(f"[INFO] LVS report written: {lvs_file}")
 
 if __name__ == "__main__":
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    gds_path = os.path.join(repo_root, "layout", "gds", "mipi_csi2_receiver_top.gds")
-    reports_dir = os.path.join(repo_root, "layout", "reports")
-    generate_gdsii(gds_path)
-    generate_verification_reports(reports_dir)
+    sys.exit(build_layout())

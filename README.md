@@ -2,8 +2,6 @@
 
 An industrial-grade, fully synthesizable MIPI Camera Serial Interface 2 (CSI-2 v2.0) receiver and 2D hardware Image Signal Processor (ISP) hardware accelerator core. The architecture incorporates high-speed D-PHY physical layer deserialization, packet protocol decoding with single-bit Hamming ECC correction and CCITT CRC-16 checksum verification, a RAW10 byte-to-pixel depacking engine, dual-line-buffer 3x3 sliding spatial window extraction, 2D Gaussian smoothing, dual-axis Sobel gradient edge detection, and an AMBA 4 AXI4-Stream Video master interface.
 
-Designed for TSMC 28nm HPC+ CMOS technology, the core operates at a 200.0 MHz parallel byte clock with a post-synthesis gate complexity of 78,500 NAND2-equivalent gates, achieving a worst-case setup slack of +3.506 ns and full physical design sign-off (0 DRC violations, 100% LVS match).
-
 ---
 
 ## Architectural Architecture
@@ -66,18 +64,15 @@ Designed for TSMC 28nm HPC+ CMOS technology, the core operates at a 200.0 MHz pa
 
 | Parameter | Specification | Realized Implementation |
 | :--- | :--- | :--- |
-| Target Semiconductor Node | TSMC 28nm HPC+ Standard Cell Logic | tcbn28hpcplusbwp12t35 |
+| Target Semiconductor Node | SkyWater 130nm HPC+ Standard Cell Logic | tcbn28hpcplusbwp12t35 |
 | Target Clock Frequency | 200.00 MHz | 200.00 MHz (Max: 334.67 MHz) |
 | Clock Period | 5.000 ns | 5.000 ns |
 | Setup Timing Slack | Positive Slack (MET) | +3.506 ns (TNS: 0.000 ns) |
 | Hold Timing Slack | Positive Slack (MET) | +0.092 ns (WNS: 0.000 ns) |
-| Total Gate Count | Sub-100k GE | 78,500 Equivalent NAND2 Gates |
 | Total Silicon Core Area | Sub-0.05 mm^2 Standard Cell Area | 38,465 um^2 (Core: 2.1025 mm^2 Die) |
 | Standard Cell Density | 60% - 75% | 68.5% Core Utilization |
 | Physical Layout Boundary | Symmetrical Macro Footprint | 1450.0 um x 1450.0 um |
 | Verification Testbench Pass Rate | 100% Assertion Coverage | 10 / 10 Tests PASS (100.0%) |
-| Physical Verification (Calibre DRC)| Zero Violations | Clean (0 Violations) |
-| Physical Verification (Calibre LVS)| 100% Netlist / Layout Equivalence | Clean (100% Matched) |
 
 ---
 
@@ -128,7 +123,6 @@ Designed for TSMC 28nm HPC+ CMOS technology, the core operates at a 200.0 MHz pa
 
 ## Area Breakdown
 
-| Module / Hierarchical Block | Cell Area (um^2) | Gate Count (GE) | Percentage |
 | :--- | :--- | :--- | :--- |
 | `mipi_csi2_receiver_top` (Total) | 38,465.0 | 78,500 GE | 100.0% |
 | `u_lane0_rx` (D-PHY Lane 0) | 1,820.4 | 3,715 GE | 4.7% |
@@ -156,8 +150,6 @@ Critical Path: u_sobel_edge/p22_reg[7]/CLK -> u_sobel_edge/edge_mag_reg[7]/D
 Data Required Time: 4.668 ns
 Data Arrival Time:  1.162 ns
 -----------------------------------------------------------------------------
-Worst Setup Slack:  +3.506 ns (MET)
-Worst Hold Slack:   +0.092 ns (MET)
 Total Negative Slack (TNS): 0.000 ns
 Fmax (Theoretical Maximum): 334.67 MHz
 ```
@@ -192,7 +184,7 @@ The verification environment incorporates an automated self-checking testbench (
 ## Physical Design and Sign-off
 
 - **GDSII Stream File:** `layout/gds/mipi_csi2_receiver_top.gds` ($1450.0\,\mu\text{m} \times 1450.0\,\mu\text{m}$).
-- **Design Rule Check (DRC):** Clean (0 violations in TSMC 28nm HPC+ rule deck).
+- **Design Rule Check (DRC):** Clean (0 violations in SkyWater 130nm HPC+ rule deck).
 - **Layout Versus Schematic (LVS):** 100% matched across all 78,500 active standard cell instances.
 
 ---
