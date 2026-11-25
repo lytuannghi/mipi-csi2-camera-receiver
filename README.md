@@ -64,14 +64,10 @@ An industrial-grade, fully synthesizable MIPI Camera Serial Interface 2 (CSI-2 v
 
 | Parameter | Specification | Realized Implementation |
 | :--- | :--- | :--- |
-| Target Semiconductor Node | SkyWater 130nm HPC+ Standard Cell Logic | tcbn28hpcplusbwp12t35 |
-| Target Clock Frequency | 200.00 MHz | 200.00 MHz (Max: 334.67 MHz) |
+| Target Semiconductor Node | SkyWater 130nm (`sky130_fd_sc_hd`) | 1P5M GDSII Layer Deck |
+| Target Clock Budget (SDC) | 200.00 MHz | Constrained in `syn/*.sdc` (external OpenSTA needed for slack) |
 | Clock Period | 5.000 ns | 5.000 ns |
-| Setup Timing Slack | Positive Slack (MET) | +3.506 ns (TNS: 0.000 ns) |
-| Hold Timing Slack | Positive Slack (MET) | +0.092 ns (WNS: 0.000 ns) |
-| Total Silicon Core Area | Sub-0.05 mm^2 Standard Cell Area | 38,465 um^2 (Core: 2.1025 mm^2 Die) |
-| Standard Cell Density | 60% - 75% | 68.5% Core Utilization |
-| Physical Layout Boundary | Symmetrical Macro Footprint | 1450.0 um x 1450.0 um |
+| GDSII Die Footprint | 360.00 um x 360.00 um | Geometric DRC Clean (0 violations) |
 | Verification Testbench Pass Rate | 100% Assertion Coverage | 10 / 10 Tests PASS (100.0%) |
 
 ---
@@ -121,37 +117,37 @@ An industrial-grade, fully synthesizable MIPI Camera Serial Interface 2 (CSI-2 v
 
 ---
 
-## Area Breakdown
+## RTL Synthesis Readiness & SDC Audit
 
-| :--- | :--- | :--- | :--- |
-| `mipi_csi2_receiver_top` (Total) | 38,465.0 | 78,500 GE | 100.0% |
-| `u_lane0_rx` (D-PHY Lane 0) | 1,820.4 | 3,715 GE | 4.7% |
-| `u_lane1_rx` (D-PHY Lane 1) | 1,795.1 | 3,663 GE | 4.7% |
-| `u_lane2_rx` (D-PHY Lane 2) | 1,795.1 | 3,663 GE | 4.7% |
-| `u_lane3_rx` (D-PHY Lane 3) | 1,795.1 | 3,663 GE | 4.7% |
-| `u_packet_handler` (CSI-2 LLP) | 4,920.8 | 10,042 GE | 12.8% |
-| `u_raw10_depacker` (RAW10 Engine) | 2,150.3 | 4,388 GE | 5.6% |
-| `u_sliding_window` (3x3 Matrix) | 12,850.5 | 26,225 GE | 33.4% |
-| `u_gaussian_filter` (Gaussian Blur) | 3,940.2 | 8,041 GE | 10.2% |
-| `u_sobel_edge` (Sobel Edge Detector) | 4,210.6 | 8,593 GE | 10.9% |
-| `u_axis_video_out` (AXI4-Stream Master) | 3,177.0 | 6,507 GE | 8.3% |
+Static Verilog-2005 structural parsing and SDC constraint audit were executed via `syn/analyze_rtl.py` (external Yosys/OpenROAD/OpenSTA required for post-synthesis gate counts, utilization, and STA slack):
 
----
+```text
+================================================================================
+RTL SYNTHESIS READINESS & CONSTRAINT REPORT: mipi-csi2-camera-receiver
+Method : Static Verilog/SV Structural Parser + SDC Constraint Audit
+Note   : Foundry Gate-Level Netlist & STA require PDK Liberty (.lib) + Synopsys/OpenROAD
+================================================================================
+RTL Source Files Inspected : 8
+Code Lines (Non-Comment)   : 596
+Sequential Blocks          : 7
+Combinational Blocks       : 1
+Declared reg/logic Signals : 59
 
-## Static Timing Analysis (STA) Summary
+MODULE BREAKDOWN:
+  rtl\axi\axis_video_out.v                      | modules=axis_video_out               | loc=  53 | seq= 1 | comb= 0
+  rtl\depacker\raw10_depacker.v                 | modules=raw10_depacker               | loc=  63 | seq= 1 | comb= 0
+  rtl\dphy\mipi_dphy_lane_rx.v                  | modules=mipi_dphy_lane_rx            | loc=  47 | seq= 1 | comb= 0
+  rtl\isp\isp_gaussian_filter.v                 | modules=isp_gaussian_filter          | loc=  28 | seq= 1 | comb= 0
+  rtl\isp\isp_sliding_window_3x3.v              | modules=isp_sliding_window_3x3       | loc=  56 | seq= 1 | comb= 0
+  rtl\isp\isp_sobel_edge.v                      | modules=isp_sobel_edge               | loc=  47 | seq= 1 | comb= 0
+  rtl\mipi_csi2_receiver_top.v                  | modules=mipi_csi2_receiver_top       | loc= 158 | seq= 0 | comb= 1
+  rtl\packet\csi2_packet_handler.v              | modules=csi2_packet_handler          | loc= 144 | seq= 1 | comb= 0
 
-Static timing analysis executed under worst-case Slow-Slow Corner ($0.90\text{ V}, 125^\circ\text{C}$):
+SDC CLOCK CONSTRAINTS:
+  csi2_timing.sdc: port=clk | period=5.00 ns | target=200.00 MHz
 
-```
-Target Clock: byte_clk (Period = 5.000 ns -> 200.00 MHz)
-Clock Uncertainty: Setup = 250 ps, Hold = 100 ps
-Critical Path: u_sobel_edge/p22_reg[7]/CLK -> u_sobel_edge/edge_mag_reg[7]/D
-
-Data Required Time: 4.668 ns
-Data Arrival Time:  1.162 ns
------------------------------------------------------------------------------
-Total Negative Slack (TNS): 0.000 ns
-Fmax (Theoretical Maximum): 334.67 MHz
+ARITHMETIC DIVISION/MODULO CHECK: CLEAN (0 combinational / or % operators)
+================================================================================
 ```
 
 ---
@@ -181,11 +177,11 @@ The verification environment incorporates an automated self-checking testbench (
 
 ---
 
-## Physical Design and Sign-off
+## Physical Design and Geometry Audit
 
-- **GDSII Stream File:** `layout/gds/mipi_csi2_receiver_top.gds` ($1450.0\,\mu\text{m} \times 1450.0\,\mu\text{m}$).
-- **Design Rule Check (DRC):** Clean (0 violations in SkyWater 130nm HPC+ rule deck).
-- **Layout Versus Schematic (LVS):** 100% matched across all 78,500 active standard cell instances.
+- **GDSII Stream File:** `layout/gds/` (360.00 um x 360.00 um SkyWater 130nm floorplan).
+- **Geometric DRC (`layout/scripts/verify_gds_drc.py`):** Clean (0 geometric violations).
+- **Port & Netlist Audit (`layout/reports/lvs_report.txt`):** Top-level geometry documented; external Magic/Netgen required for SPICE LVS.
 
 ---
 
